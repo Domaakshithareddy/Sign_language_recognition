@@ -75,26 +75,17 @@ def crop_and_resize_images(data):
 train_images, train_labels = crop_and_resize_images(train_data)
 test_images, test_labels = crop_and_resize_images(test_data)
 
-# le=LabelEncoder()
-# train_labels_encoded=le.fit_transform(train_labels)
-# test_labels_encoded=le.transform(test_labels)
+le=LabelEncoder()
+train_labels_encoded=le.fit_transform(train_labels)
+test_labels_encoded=le.transform(test_labels)
 
-# np.save('train_img.npy',train_images)
-# np.save('train_labels.npy',train_labels_encoded)
-# np.save('test_img.npy',test_images)
-# np.save('test_labels.npy',test_labels_encoded)
-# np.save('label_encoded_classes',le.classes_)
+np.save('encoded/train_img.npy',train_images)
+np.save('encoded/train_labels.npy',train_labels_encoded)
+np.save('encoded/test_img.npy',test_images)
+np.save('encoded/test_labels.npy',test_labels_encoded)
+np.save('encoded/label_encoded_classes',le.classes_)
 
-# print(f"Label encoder classes: {le.classes_}")
-# print(f"Train labels (first 5): {train_labels_encoded[:5]}")
-# print(f"Test labels (first 5): {test_labels_encoded[:5]}")
-# print("Saved images and labels as NumPy arrays.")
-
-
-# Debug: Check unique labels in train and test sets
-train_unique_labels = set(train_labels)
-test_unique_labels = set(test_labels)
-
-print(f"Unique labels in train set: {train_unique_labels}")
-print(f"Unique labels in test set: {test_unique_labels}")
-print(f"Labels in test but not in train: {test_unique_labels - train_unique_labels}")
+print(f"Label encoder classes: {le.classes_}")
+print(f"Train labels (first 5): {train_labels_encoded[:5]}")
+print(f"Test labels (first 5): {test_labels_encoded[:5]}")
+print("Saved images and labels as NumPy arrays.")
