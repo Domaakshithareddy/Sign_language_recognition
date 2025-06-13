@@ -1,23 +1,29 @@
 import cv2
 import numpy as np
-from tensorflow.keras.models import load_model
 import os
+from collections import deque
+from tensorflow.keras.models import load_model
+import pyttsx3
 
-IMG_SIZE = (64, 64)
-MODEL_PATH = "ASL_model.h5"
-TRAIN_DIR = "Dataset/asl_alphabet_train/asl_alphabet_train"
-
-model = load_model(MODEL_PATH)
-class_names = sorted(os.listdir(TRAIN_DIR))
-
-cap = cv2.VideoCapture(0)
-if not cap.isOpened():
-    print("Error: Cannot access webcam.")
-    exit()
-
+IMG_SIZE = (128, 128)
+MODEL_PATH = "mobilenetv2_finetuned.keras"
+TRAIN_DIR = "my_webcam_data"
+BOX_SIZE = 500
 FONT = cv2.FONT_HERSHEY_SIMPLEX
 
-BOX_SIZE = 500 
+model = load_model(MODEL_PATH)
+class_names = sorted([d for d in os.listdir(TRAIN_DIR) if os.path.isdir(os.path.join(TRAIN_DIR, d))])
+
+prediction_buffer = deque(maxlen=15)
+collected_text = ""
+spoken = False
+
+engine = pyttsx3.init()
+engine.setProperty('rate', 150)
+
+cap = cv2.VideoCapture(0)
+print("Press 'a' to add letter, 's' to speak, 'c' to clear, 'q' to quit.")
+
 while True:
     ret, frame = cap.read()
     if not ret:
@@ -42,16 +48,47 @@ while True:
 
     pred = model.predict(roi_input, verbose=0)
     pred_idx = np.argmax(pred)
-    pred_label = class_names[pred_idx]
     confidence = pred[0][pred_idx]
 
-    display_text = f"{pred_label} ({confidence*100:.1f}%)"
-    cv2.putText(frame, display_text, (10, 40), FONT, 1, (255, 255, 255), 2)
+    if confidence > 0.7:
+        label = class_names[pred_idx]
+    else:
+        label = "_"
 
-    cv2.imshow("ASL Real-Time Recognition", frame)
+    if label == "space":
+        display_label = "space"
+    elif label == "del":
+        display_label = "del"
+    else:
+        display_label = label
 
-    if cv2.waitKey(1) & 0xFF == ord('q'):
+    prediction_buffer.append(display_label)
+    stable_label = max(set(prediction_buffer), key=prediction_buffer.count)
+
+    cv2.putText(frame, f"Letter: {stable_label}", (10, 95), FONT, 1.4, (255,0,0), 3)
+    cv2.putText(frame, f"Text: {collected_text}", (10, 50), FONT, 1.4, (0,0,0), 3)
+    cv2.putText(frame, f"Press 'a' to add letter, 's' to speak, 'c' to clear, 'q' to quit.", (w-990,h-15), FONT, 1, (0,0,0), 2)
+
+    cv2.imshow("ASL to Text", frame)
+    key = cv2.waitKey(1) & 0xFF
+
+    if key == ord('q'):
         break
+    elif key == ord('a') and stable_label != "_":
+        if stable_label == "space":
+            collected_text += " "
+        elif stable_label == "del":
+            collected_text=collected_text[:-1]
+        else:
+            collected_text += stable_label
+        spoken = False
+    elif key == ord('s') and collected_text and not spoken:
+        engine.say(collected_text)
+        engine.runAndWait()
+        spoken = True
+    elif key == ord('c'):
+        collected_text = ""
+        spoken = False
 
 cap.release()
 cv2.destroyAllWindows()
