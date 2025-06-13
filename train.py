@@ -44,12 +44,12 @@ BATCH_SIZE = 32
 
 train_datagen = ImageDataGenerator(
     rescale=1./255,
-    rotation_range=20,
-    width_shift_range=0.2,
-    height_shift_range=0.2,
-    shear_range=0.2,
-    zoom_range=0.2,
-    horizontal_flip=True,
+    rotation_range=10,
+    width_shift_range=0.1,
+    height_shift_range=0.1,
+    zoom_range=0.1,
+    brightness_range=[0.8, 1.2],
+    horizontal_flip=False,
     validation_split=0.1
 )
 
@@ -70,29 +70,33 @@ val_gen = train_datagen.flow_from_directory(
 )
 
 model = Sequential([
-    Conv2D(32, (3,3), activation='relu', input_shape=(64, 64, 3)),
+    Conv2D(32, (3, 3), activation='relu', input_shape=(64, 64, 3), padding='same'),
     BatchNormalization(),
-    MaxPooling2D(2,2),
+    MaxPooling2D(pool_size=(2, 2)),
 
-    Conv2D(64, (3,3), activation='relu'),
+    Conv2D(64, (3, 3), activation='relu', padding='same'),
     BatchNormalization(),
-    MaxPooling2D(2,2),
+    MaxPooling2D(pool_size=(2, 2)),
 
-    Conv2D(128, (3,3), activation='relu'),
+    Conv2D(128, (3, 3), activation='relu', padding='same'),
     BatchNormalization(),
-    MaxPooling2D(2,2),
+    MaxPooling2D(pool_size=(2, 2)),
+    Dropout(0.3),
+
+    Conv2D(256, (3, 3), activation='relu', padding='same'),
+    BatchNormalization(),
+    MaxPooling2D(pool_size=(2, 2)),
+    Dropout(0.4),
 
     Flatten(),
-    Dense(128, activation='relu'),
-    Dropout(0.3),
-    Dense(train_gen.num_classes, activation='softmax')
+
+    Dense(256, activation='relu'),
+    Dropout(0.5),
+    Dense(29, activation='softmax')
 ])
 
-model.compile(
-    optimizer='adam',
-    loss='categorical_crossentropy',
-    metrics=['accuracy']
-)
+model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+
 
 model.summary()
 
