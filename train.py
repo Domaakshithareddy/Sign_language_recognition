@@ -25,8 +25,11 @@ model = Sequential([
     Dense(num_classes, activation='softmax')
 ])
 
-model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
-
+model.compile(
+    optimizer='adam',
+    loss='categorical_crossentropy',
+    metrics=['accuracy']
+)
 
 datagen = ImageDataGenerator(
     rescale=1./255,
