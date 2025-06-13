@@ -1,2 +1,4 @@
-/Dataset/
-asl_model.h5
+/my_webcam_data/
+ASL_model.h5
+mobilenetv2_best.keras
+mobilenetv2_finetuned.keras
