@@ -55,11 +55,19 @@ while True:
     else:
         label = "_"
 
-    prediction_buffer.append(label)
+    if label == "space":
+        display_label = "space"
+    elif label == "del":
+        display_label = "del"
+    else:
+        display_label = label
+
+    prediction_buffer.append(display_label)
     stable_label = max(set(prediction_buffer), key=prediction_buffer.count)
 
-    cv2.putText(frame, f"Letter: {stable_label}", (10, 50), FONT, 1, (255,0,0), 2)
-    cv2.putText(frame, f"Text: {collected_text}", (10, 30), FONT, 1, (0,0,0), 2)
+    cv2.putText(frame, f"Letter: {stable_label}", (10, 95), FONT, 1.4, (255,0,0), 3)
+    cv2.putText(frame, f"Text: {collected_text}", (10, 50), FONT, 1.4, (0,0,0), 3)
+    cv2.putText(frame, f"Press 'a' to add letter, 's' to speak, 'c' to clear, 'q' to quit.", (w-990,h-15), FONT, 1, (0,0,0), 2)
 
     cv2.imshow("ASL to Text", frame)
     key = cv2.waitKey(1) & 0xFF
@@ -67,7 +75,12 @@ while True:
     if key == ord('q'):
         break
     elif key == ord('a') and stable_label != "_":
-        collected_text += stable_label
+        if stable_label == "space":
+            collected_text += " "
+        elif stable_label == "del":
+            collected_text=collected_text[:-1]
+        else:
+            collected_text += stable_label
         spoken = False
     elif key == ord('s') and collected_text and not spoken:
         engine.say(collected_text)
