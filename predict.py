@@ -1,26 +1,33 @@
 import cv2
 import numpy as np
-from tensorflow.keras.models import load_model
 import os
 from collections import deque
+from tensorflow.keras.models import load_model
+import pyttsx3
 
 # === CONFIG ===
-IMG_SIZE = (128, 128)  # must match training
+IMG_SIZE = (128, 128)
 MODEL_PATH = "mobilenetv2_finetuned.keras"
-TRAIN_DIR = "my_webcam_data"  # where class folders are
-BOX_SIZE = 300  # green box size
+TRAIN_DIR = "my_webcam_data"
+BOX_SIZE = 500
+FONT = cv2.FONT_HERSHEY_SIMPLEX
 
 # === Load model and class names ===
 model = load_model(MODEL_PATH)
 class_names = sorted([d for d in os.listdir(TRAIN_DIR) if os.path.isdir(os.path.join(TRAIN_DIR, d))])
 
-# === Prediction buffer for stability ===
-buffer = deque(maxlen=15)
+# === Initialize prediction buffer and output string ===
+prediction_buffer = deque(maxlen=15)
+collected_text = ""
+spoken = False
 
-# === Webcam Setup ===
+# === Text-to-speech engine ===
+engine = pyttsx3.init()
+engine.setProperty('rate', 150)
+
+# === Webcam ===
 cap = cv2.VideoCapture(0)
-FONT = cv2.FONT_HERSHEY_SIMPLEX
-print("Press 'q' to quit.")
+print("Press 'a' to add letter, 's' to speak, 'c' to clear, 'q' to quit.")
 
 while True:
     ret, frame = cap.read()
@@ -37,12 +44,11 @@ while True:
     # Draw green box
     cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
 
-    # Get ROI
+    # Region of interest
     roi = frame[y1:y2, x1:x2]
     if roi.shape[0] == 0 or roi.shape[1] == 0:
         continue
 
-    # Resize + normalize
     roi_resized = cv2.resize(roi, IMG_SIZE)
     roi_normalized = roi_resized.astype("float32") / 255.0
     roi_input = np.expand_dims(roi_normalized, axis=0)
@@ -52,26 +58,33 @@ while True:
     pred_idx = np.argmax(pred)
     confidence = pred[0][pred_idx]
 
-    # Apply threshold
     if confidence > 0.7:
         label = class_names[pred_idx]
     else:
-        label = "Uncertain"
+        label = "_"
 
-    buffer.append(label)
+    prediction_buffer.append(label)
+    stable_label = max(set(prediction_buffer), key=prediction_buffer.count)
 
-    # Get most frequent label
-    stable_label = max(set(buffer), key=buffer.count)
+    # Display predicted label
+    cv2.putText(frame, f"Letter: {stable_label}", (10, 50), FONT, 1, (255,0,0), 2)
+    cv2.putText(frame, f"Text: {collected_text}", (10, 30), FONT, 1, (0,0,0), 2)
 
-    # Display
-    text = f"{stable_label} ({confidence*100:.1f}%)" if stable_label != "Uncertain" else "Uncertain"
-    cv2.putText(frame, text, (10, 40), FONT, 1, (255, 255, 255), 2)
+    cv2.imshow("ASL to Text", frame)
+    key = cv2.waitKey(1) & 0xFF
 
-    cv2.imshow("ASL Prediction", frame)
-
-    # Exit key
-    if cv2.waitKey(1) & 0xFF == ord('q'):
+    if key == ord('q'):
         break
+    elif key == ord('a') and stable_label != "_":
+        collected_text += stable_label
+        spoken = False
+    elif key == ord('s') and collected_text and not spoken:
+        engine.say(collected_text)
+        engine.runAndWait()
+        spoken = True
+    elif key == ord('c'):
+        collected_text = ""
+        spoken = False
 
 cap.release()
 cv2.destroyAllWindows()
