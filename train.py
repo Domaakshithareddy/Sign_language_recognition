@@ -6,16 +6,14 @@ from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from tensorflow.keras.callbacks import ModelCheckpoint
 import os
 
-# === Config ===
 IMG_SIZE = (128, 128)
 BATCH_SIZE = 32
 EPOCHS = 12
 TRAIN_DIR = "my_webcam_data/"
 OUTPUT_MODEL = "mobilenetv2_finetuned.keras"
 
-# === Load Pretrained Base ===
 base_model = MobileNetV2(weights='imagenet', include_top=False, input_shape=(128, 128, 3))
-base_model.trainable = False  # Freeze base
+base_model.trainable = False  
 
 num_classes = len([d for d in os.listdir(TRAIN_DIR) if os.path.isdir(os.path.join(TRAIN_DIR, d))])
 model = Sequential([
@@ -27,15 +25,12 @@ model = Sequential([
     Dense(num_classes, activation='softmax')
 ])
 
-
-# === Compile ===
 model.compile(
     optimizer='adam',
     loss='categorical_crossentropy',
     metrics=['accuracy']
 )
 
-# === Augmentation ===
 datagen = ImageDataGenerator(
     rescale=1./255,
     rotation_range=20,
@@ -65,10 +60,8 @@ val_gen = datagen.flow_from_directory(
     shuffle=False
 )
 
-# === Checkpoint ===
 checkpoint = ModelCheckpoint("mobilenetv2_best.keras", monitor="val_accuracy", save_best_only=True, mode="max")
 
-# === Train ===
 model.fit(
     train_gen,
     validation_data=val_gen,
@@ -76,6 +69,5 @@ model.fit(
     callbacks=[checkpoint]
 )
 
-# === Save final model ===
 model.save(OUTPUT_MODEL)
-print(f"✅ Saved: {OUTPUT_MODEL}")
+print(f"Saved: {OUTPUT_MODEL}")

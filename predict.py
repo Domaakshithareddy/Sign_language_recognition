@@ -5,27 +5,22 @@ from collections import deque
 from tensorflow.keras.models import load_model
 import pyttsx3
 
-# === CONFIG ===
 IMG_SIZE = (128, 128)
 MODEL_PATH = "mobilenetv2_finetuned.keras"
 TRAIN_DIR = "my_webcam_data"
 BOX_SIZE = 500
 FONT = cv2.FONT_HERSHEY_SIMPLEX
 
-# === Load model and class names ===
 model = load_model(MODEL_PATH)
 class_names = sorted([d for d in os.listdir(TRAIN_DIR) if os.path.isdir(os.path.join(TRAIN_DIR, d))])
 
-# === Initialize prediction buffer and output string ===
 prediction_buffer = deque(maxlen=15)
 collected_text = ""
 spoken = False
 
-# === Text-to-speech engine ===
 engine = pyttsx3.init()
 engine.setProperty('rate', 150)
 
-# === Webcam ===
 cap = cv2.VideoCapture(0)
 print("Press 'a' to add letter, 's' to speak, 'c' to clear, 'q' to quit.")
 
@@ -41,10 +36,8 @@ while True:
     x2 = x1 + BOX_SIZE
     y2 = y1 + BOX_SIZE
 
-    # Draw green box
     cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
 
-    # Region of interest
     roi = frame[y1:y2, x1:x2]
     if roi.shape[0] == 0 or roi.shape[1] == 0:
         continue
@@ -53,7 +46,6 @@ while True:
     roi_normalized = roi_resized.astype("float32") / 255.0
     roi_input = np.expand_dims(roi_normalized, axis=0)
 
-    # Predict
     pred = model.predict(roi_input, verbose=0)
     pred_idx = np.argmax(pred)
     confidence = pred[0][pred_idx]
@@ -66,7 +58,6 @@ while True:
     prediction_buffer.append(label)
     stable_label = max(set(prediction_buffer), key=prediction_buffer.count)
 
-    # Display predicted label
     cv2.putText(frame, f"Letter: {stable_label}", (10, 50), FONT, 1, (255,0,0), 2)
     cv2.putText(frame, f"Text: {collected_text}", (10, 30), FONT, 1, (0,0,0), 2)
 
