@@ -1,3 +1,4 @@
 /my_webcam_data/
 mobilenetv2_best.keras
 mobilenetv2_finetuned.keras
+ASL_model.h5
